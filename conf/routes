@@ -1,0 +1,6 @@
+# requires play routes plugin
+
+# First created this health endpoint to be used to test that app is, in fact, running
+GET     /v1/health                  controllers.Health.index
+
+POST    /v1/initializeTumble        controllers.CartContoller.createCart(name: String, state: Option[String])
