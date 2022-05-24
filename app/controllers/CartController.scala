@@ -3,10 +3,12 @@ package controllers
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
+import models.ItemList
+import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Logger}
 import services.CartActor
-import services.CartActor.CreateCart
+import services.CartActor.{CreateCart, GetItems}
 
 import javax.inject.Inject
 import scala.concurrent.Await
@@ -51,9 +53,10 @@ class CartController @Inject()(cc: ControllerComponents,
 
   def getItems() = Action {
     log.warn(s"getItems")
-    val cartID = ask(cartActor, CreateCart("id", None))
-      .mapTo[String]
-    Ok(Await.result[String](cartID, 5.seconds))
+    val cartID = ask(cartActor, GetItems())
+      .mapTo[ItemList]
+    val result = Await.result[ItemList](cartID, 5.seconds)
+    Ok(Json.toJson(result))
   }
 
   def addItemToCart(itemID: String, id: String) = Action {
