@@ -8,7 +8,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Logger}
 import services.CartActor
-import services.CartActor.{CheckoutCart, CreateCart, GetItems}
+import services.CartActor.{AddItemToCart, ApplyCouponToCart, CheckoutCart, CreateCart, GetItems}
 
 import javax.inject.Inject
 import scala.concurrent.Await
@@ -30,6 +30,39 @@ class CartController @Inject()(cc: ControllerComponents,
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
+  def getItems() = Action {
+    log.warn(s"getItems")
+    val cartID = ask(cartActor, GetItems())
+      .mapTo[ItemList]
+    val result = Await.result[ItemList](cartID, 5.seconds)
+    Ok(Json.toJson(result))
+  }
+
+  def addItemToCart(cartId: String, itemId: Int) = Action {
+    log.warn(s"addItemToCart - item: $itemId, cartID: $cartId")
+    val cartID = ask(cartActor, AddItemToCart(cartId, itemId))
+      .mapTo[String]
+    Ok(Await.result[String](cartID, 5.seconds))
+  }
+
+  def applyCouponToCart(couponID: String, id: String) = Action {
+    log.warn(s"applyCouponToCart - cartID: $id, couponID: $couponID")
+    val cartID = ask(cartActor, ApplyCouponToCart(couponID, id))
+      .mapTo[String]
+    Ok(Await.result[String](cartID, 5.seconds))
+  }
+
+  def checkoutCart(id: String) = Action {
+    log.warn(s"checkOutCart - cartID: $id")
+    val checkOutResult = ask(cartActor, CheckoutCart(id))
+      .mapTo[Either[String, CheckedOutCart]]
+    Await.result[Either[String, CheckedOutCart]](checkOutResult, 5.seconds) match {
+      case Left(errorMessage) => BadRequest(errorMessage)
+      case Right(cart) => Ok(Json.toJson[CheckedOutCart](cart))
+    }
+  }
+
+  // Below this line none of the endpoints are actually plugged in
   def updateCart(id: String, state: Option[String]) = Action {
     log.warn(s"updateCart - id: $id state: $state")
     val cartID = ask(cartActor, CreateCart(id, state))
@@ -51,21 +84,6 @@ class CartController @Inject()(cc: ControllerComponents,
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def getItems() = Action {
-    log.warn(s"getItems")
-    val cartID = ask(cartActor, GetItems())
-      .mapTo[ItemList]
-    val result = Await.result[ItemList](cartID, 5.seconds)
-    Ok(Json.toJson(result))
-  }
-
-  def addItemToCart(itemID: String, id: String) = Action {
-    log.warn(s"addItemToCart - item: $itemID, cartID: $id")
-    val cartID = ask(cartActor, CreateCart("id", None))
-      .mapTo[String]
-    Ok(Await.result[String](cartID, 5.seconds))
-  }
-
   def removeItemFromCart(itemID: String, id: String) = Action {
     log.warn(s"removeItemFromCart - item: $itemID, cartID: $id")
     val cartID = ask(cartActor, CreateCart("id", None))
@@ -78,22 +96,5 @@ class CartController @Inject()(cc: ControllerComponents,
     val cartID = ask(cartActor, CreateCart("id", None))
       .mapTo[String]
     Ok(Await.result[String](cartID, 5.seconds))
-  }
-
-  def applyCouponToCart(couponID: String, id: String) = Action {
-    log.warn(s"applyCouponToCart - cartID: $id, couponID: $couponID")
-    val cartID = ask(cartActor, CreateCart("id", None))
-      .mapTo[String]
-    Ok(Await.result[String](cartID, 5.seconds))
-  }
-
-  def checkoutCart(id: String) = Action {
-    log.warn(s"checkOutCart - cartID: $id")
-    val checkOutResult = ask(cartActor, CheckoutCart(id))
-      .mapTo[Either[String, CheckedOutCart]]
-    Await.result[Either[String, CheckedOutCart]](checkOutResult, 5.seconds) match {
-      case Left(errorMessage) => BadRequest(errorMessage)
-      case Right(cart) => Ok(Json.toJson[CheckedOutCart](cart))
-    }
   }
 }

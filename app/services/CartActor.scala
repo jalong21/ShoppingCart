@@ -40,7 +40,7 @@ class CartActor(conf: Configuration) extends Actor with Timers {
       val updatedItems: Seq[Item] = cart.items ++ Seq(ItemProvider.getItem(itemId))
       val newCart = Cart(cart.uuid, cart.name, cart.shippingState, updatedItems, cart.coupons)
       Cache.getCache.put(new Element(cart.uuid, newCart))
-      sender ! true
+      sender ! "Success!"
     }
     case ApplyCouponToCart(couponId: String, cartId: String) => {
       Option(CouponProvider.getCoupon(couponId))
@@ -49,10 +49,11 @@ class CartActor(conf: Configuration) extends Actor with Timers {
           val updatedCoupons: Seq[String] = cart.coupons ++ Seq(couponId)
           val newCart = Cart(cart.uuid, cart.name, cart.shippingState, cart.items, updatedCoupons)
           Cache.getCache.put(new Element(cart.uuid, newCart))
-          sender ! true
+          sender ! "Success"
         })
         .getOrElse({
-          sender ! false
+          //TODO: use an Either like checkout
+          sender ! "Coupon Not Found"
         })
     }
     case CheckoutCart(cartId: String) => {
