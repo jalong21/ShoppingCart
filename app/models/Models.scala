@@ -16,9 +16,52 @@ object Item {
   implicit val jsonWrites: Writes[Item] = Json.writes[Item]
 }
 
-case class Cart(uuid: UUID, shippingState: String, items: Seq[Item])
+case class Coupon(priceMultiplyer: Double,
+                  itemId: Option[Int],
+                  couponFunction: ((Seq[Item], Double, Option[Int]) => Seq[Item]))
+
+case class Cart(uuid: String, name: String, shippingState: String, items: Seq[Item], coupons: Seq[Int])
 object Cart {
   implicit val jsonReads: Reads[Cart] = Json.reads[Cart]
+}
+
+object CouponProvider {
+
+  def perOffEverything(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int] = None) = {
+    items
+      .map(item => Item(item.name, (item.price*priceMultiplyer), item.id))
+  }
+
+  def perOffItem(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]) = {
+    itemId.map(id => {
+      items
+        .map(item => item.id match {
+          case currentId if currentId == id => Item(item.name, (item.price*priceMultiplyer), item.id)
+          case _ => item
+        })
+    }).getOrElse(items)
+  }
+
+  def perOffTwoOrMore(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]) = {
+    itemId.map(id => {
+      val groupedItems = items
+        .groupBy[Int](_.id)
+        .values
+        .map(items => {
+          if (items.size > 1) {
+
+          }
+        })
+
+
+    }).getOrElse(items)
+  }
+
+  val Coupons = Seq[Coupon](
+    Coupon(0.9, None, perOffEverything), // 15% off
+    Coupon(0.9, Some(5), perOffItem), // 10% off watering cans
+    Coupon(0.5, Some(2), perOffTwoOrMore) // 50% off spades if you buy 2 or more
+  )
 }
 
 object ItemProvider {
