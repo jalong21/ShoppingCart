@@ -3,7 +3,7 @@ package controllers
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import models.ItemList
+import models.{CheckedOutCart, ItemList}
 import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Logger}
@@ -87,10 +87,13 @@ class CartController @Inject()(cc: ControllerComponents,
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def checkoutCart(paymentId: String, id: Option[String]) = Action {
-    log.warn(s"checkOutCart - cartID: $id, paymentId: $paymentId")
-    val cartID = ask(cartActor, CreateCart("id", None))
-      .mapTo[String]
-    Ok(Await.result[String](cartID, 5.seconds))
+  def checkoutCart(id: String) = Action {
+    log.warn(s"checkOutCart - cartID: $id")
+    val checkOutResult = ask(cartActor, checkoutCart(id))
+      .mapTo[Either[String, CheckedOutCart]]
+    Await.result[Either[String, CheckedOutCart]](checkOutResult, 5.seconds) match {
+      case Left(errorMessage) => BadRequest(errorMessage)
+      case Right(cart) => Ok(Json.toJson[CheckedOutCart](cart))
+    }
   }
 }

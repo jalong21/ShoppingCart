@@ -3,12 +3,13 @@ package services
 import Utils.Cache
 import akka.actor.typed.ActorRef
 import akka.actor.{Actor, ActorRef, Props, Timers}
-import models.{Cart, Item, ItemList, ItemProvider}
+import models.{Cart, CheckedOutCart, Coupon, CouponProvider, Item, ItemList, ItemProvider}
 import net.sf.ehcache.Element
 import play.api.{Configuration, Logger}
-import services.CartActor.{AddItemToCart, ApplyCouponToCart, CreateCart, GetItems}
+import services.CartActor.{AddItemToCart, ApplyCouponToCart, CheckoutCart, CreateCart, GetItems}
 
 import java.util.UUID
+import scala.collection.IterableOnce.iterableOnceExtensionMethods
 
 
 object CartActor {
@@ -33,7 +34,7 @@ class CartActor(conf: Configuration) extends Actor with Timers {
   override def receive: Receive = {
     case CreateCart(name: String, state: Option[String]) => {
       val cartUid = UUID.randomUUID().toString
-      Cache.getCache.put(new Element(cartUid, Cart(cartUid, name, state.getOrElse("none"), Seq[Item](), Seq[String]())))
+      Cache.getCache.put(new Element(cartUid, Cart(cartUid, name, state, Seq[Item](), Seq[String]())))
       sender ! cartUid
     }
     case AddItemToCart(cartId: String, itemId: Int) => {
@@ -44,7 +45,37 @@ class CartActor(conf: Configuration) extends Actor with Timers {
       sender ! true
     }
     case ApplyCouponToCart(couponId: String, cartId: String) => {
-
+      Option(CouponProvider.getCoupon(couponId))
+        .map(_ => {
+          val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
+          val updatedCoupons: Seq[String] = cart.coupons ++ Seq(couponId)
+          val newCart = Cart(cart.uuid, cart.name, cart.shippingState, cart.items, updatedCoupons)
+          Cache.getCache.put(new Element(cart.uuid, newCart))
+          sender ! true
+        })
+        .getOrElse({
+          sender ! false
+        })
+    }
+    case CheckoutCart(cartId: String) => {
+      val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
+      cart.shippingState.map(state => {
+        val couponedItems = cart
+          .coupons
+          .map(coupon => CouponProvider.getCoupon(coupon))
+          .foldLeft[Seq[Item]](cart.items)((items, coupon) =>
+            coupon.couponFunction(items, coupon.priceMultiplyer, coupon.itemId))
+        val taxedTotalCost = couponedItems
+          .foldLeft[Double](0)((runningTotal, item) => {
+            //TODO: make list of states with individual tax amounts for this calculation
+            runningTotal + item.price * 1.05
+          })
+        val calculatedCart = CheckedOutCart(taxedTotalCost, Cart(cart.uuid, cart.name, cart.shippingState, couponedItems, cart.coupons))
+        sender ! Right(calculatedCart)
+      })
+        .getOrElse({
+          sender ! Left("State Not Specified. Cannot Calculate Taxes.")
+        })
     }
     case GetItems() => {
       sender ! ItemList(ItemProvider.items)

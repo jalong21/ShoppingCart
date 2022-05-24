@@ -6,23 +6,26 @@ import java.util.UUID
 
 case class ItemList(items: Seq[Item])
 object ItemList {
-  implicit val jsonReads: Reads[ItemList] = Json.reads[ItemList]
   implicit val writes = Json.writes[ItemList]
 }
 
 case class Item(name: String, price: Double, id: Int)
 object Item {
-  implicit val jsonReads: Reads[Item] = Json.reads[Item]
-  implicit val jsonWrites: Writes[Item] = Json.writes[Item]
+  implicit val writes: Writes[Item] = Json.writes[Item]
 }
 
 case class Coupon(priceMultiplyer: Double,
                   itemId: Option[Int],
                   couponFunction: ((Seq[Item], Double, Option[Int]) => Seq[Item]))
 
-case class Cart(uuid: String, name: String, shippingState: String, items: Seq[Item], coupons: Seq[String])
+case class Cart(uuid: String, name: String, shippingState: Option[String], items: Seq[Item], coupons: Seq[String])
 object Cart {
-  implicit val jsonReads: Reads[Cart] = Json.reads[Cart]
+  implicit val writes: Writes[Cart] = Json.writes[Cart]
+}
+
+case class CheckedOutCart(totalPrice: Double, cart: Cart)
+object CheckedOutCart {
+  implicit val writes: Writes[CheckedOutCart] = Json.writes[CheckedOutCart]
 }
 
 object CouponProvider {
@@ -68,12 +71,17 @@ object CouponProvider {
     }).getOrElse(items)
   }
 
-  val Coupons = Map[String, Coupon](
+  val coupons = Map[String, Coupon](
     ("15PerOff", Coupon(0.9, None, perOffEverything)), // 15% off
     ("10PerOffWaterCan", Coupon(0.9, Some(5), perOffItem)), // 10% off watering cans
     ("50PerOff2OrMoreSpade", Coupon(0.5, Some(2), perOffTwoOrMore)), // 50% off spades if you buy 2 or more
     ("50PerOffGroupOf3Trowel", Coupon(0.5, Some(7), perOffMultipleOfThree)) // 50% off trowel if you buy multiple of 3
   )
+
+  def getCoupon(id: String) = coupons
+    .filter(_._1.equals(id))
+    .map(_._2)
+    .head
 }
 
 object ItemProvider {
@@ -93,5 +101,7 @@ object ItemProvider {
     Item("Pruning Saw", 64.95, 13)
   )
 
-  def getItem(id: Int) = items.filter(_.id == id).head
+  def getItem(id: Int) = items
+    .filter(_.id == id)
+    .head
 }
