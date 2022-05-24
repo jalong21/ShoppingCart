@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorRef, Props, Timers}
 import models.{Cart, Item, ItemList, ItemProvider}
 import net.sf.ehcache.Element
 import play.api.{Configuration, Logger}
-import services.CartActor.{CreateCart, GetItems}
+import services.CartActor.{AddItemToCart, ApplyCouponToCart, CreateCart, GetItems}
 
 import java.util.UUID
 
@@ -33,8 +33,18 @@ class CartActor(conf: Configuration) extends Actor with Timers {
   override def receive: Receive = {
     case CreateCart(name: String, state: Option[String]) => {
       val cartUid = UUID.randomUUID().toString
-      Cache.getCache.put(new Element(cartUid, Cart(cartUid, name, state.getOrElse("none"), Seq[Item]())))
+      Cache.getCache.put(new Element(cartUid, Cart(cartUid, name, state.getOrElse("none"), Seq[Item](), Seq[String]())))
       sender ! cartUid
+    }
+    case AddItemToCart(cartId: String, itemId: Int) => {
+      val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
+      val updatedItems: Seq[Item] = cart.items ++ ItemProvider.items.filter(_.id == itemId)
+      val newCart = Cart(cart.uuid, cart.name, cart.shippingState, updatedItems, cart.coupons)
+      Cache.getCache.put(new Element(cart.uuid, newCart))
+      sender ! true
+    }
+    case ApplyCouponToCart(couponId: String, cartId: String) => {
+
     }
     case GetItems() => {
       sender ! ItemList(ItemProvider.items)

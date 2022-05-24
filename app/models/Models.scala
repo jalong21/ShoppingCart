@@ -20,19 +20,19 @@ case class Coupon(priceMultiplyer: Double,
                   itemId: Option[Int],
                   couponFunction: ((Seq[Item], Double, Option[Int]) => Seq[Item]))
 
-case class Cart(uuid: String, name: String, shippingState: String, items: Seq[Item], coupons: Seq[Int])
+case class Cart(uuid: String, name: String, shippingState: String, items: Seq[Item], coupons: Seq[String])
 object Cart {
   implicit val jsonReads: Reads[Cart] = Json.reads[Cart]
 }
 
 object CouponProvider {
 
-  def perOffEverything(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int] = None) = {
+  def perOffEverything(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int] = None): Seq[Item] = {
     items
       .map(item => Item(item.name, (item.price*priceMultiplyer), item.id))
   }
 
-  def perOffItem(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]) = {
+  def perOffItem(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]): Seq[Item] = {
     itemId.map(id => {
       items
         .map(item => item.id match {
@@ -42,25 +42,37 @@ object CouponProvider {
     }).getOrElse(items)
   }
 
-  def perOffTwoOrMore(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]) = {
+  def perOffTwoOrMore(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]): Seq[Item] = {
     itemId.map(id => {
-      val groupedItems = items
+      items
         .groupBy[Int](_.id)
         .values
-        .map(items => {
-          if (items.size > 1) {
-
-          }
-        })
-
-
+        .map(items => items match {
+          case items if (items.size > 1 && items.head.id == id) =>
+            items.map(item => Item(item.name, (item.price*priceMultiplyer), item.id))
+          case _ => items
+        }).flatten[Item].toSeq
     }).getOrElse(items)
   }
 
-  val Coupons = Seq[Coupon](
-    Coupon(0.9, None, perOffEverything), // 15% off
-    Coupon(0.9, Some(5), perOffItem), // 10% off watering cans
-    Coupon(0.5, Some(2), perOffTwoOrMore) // 50% off spades if you buy 2 or more
+  def perOffMultipleOfThree(items: Seq[Item], priceMultiplyer: Double, itemId: Option[Int]): Seq[Item] = {
+    itemId.map(id => {
+      items
+        .groupBy[Int](_.id)
+        .values
+        .map(items => items match {
+          case items if (items.size % 3 == 0 && items.head.id == id) =>
+            items.map(item => Item(item.name, (item.price*priceMultiplyer), item.id))
+          case _ => items
+        }).flatten[Item].toSeq
+    }).getOrElse(items)
+  }
+
+  val Coupons = Map[String, Coupon](
+    ("15PerOff", Coupon(0.9, None, perOffEverything)), // 15% off
+    ("10PerOffWaterCan", Coupon(0.9, Some(5), perOffItem)), // 10% off watering cans
+    ("50PerOff2OrMoreSpade", Coupon(0.5, Some(2), perOffTwoOrMore)), // 50% off spades if you buy 2 or more
+    ("50PerOffGroupOf3Trowel", Coupon(0.5, Some(7), perOffMultipleOfThree)) // 50% off trowel if you buy multiple of 3
   )
 }
 
