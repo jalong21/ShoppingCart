@@ -1,15 +1,13 @@
 package services
 
 import Utils.Cache
-import akka.actor.typed.ActorRef
-import akka.actor.{Actor, ActorRef, Props, Timers}
-import models.{Cart, CheckedOutCart, Coupon, CouponProvider, Item, ItemList, ItemProvider}
+import akka.actor.{Actor, Props, Timers}
+import models._
 import net.sf.ehcache.Element
 import play.api.{Configuration, Logger}
-import services.CartActor.{AddItemToCart, ApplyCouponToCart, CheckoutCart, CreateCart, GetItems}
+import services.CartActor._
 
 import java.util.UUID
-import scala.collection.IterableOnce.iterableOnceExtensionMethods
 
 
 object CartActor {

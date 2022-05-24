@@ -2,8 +2,6 @@ package models
 
 import play.api.libs.json._
 
-import java.util.UUID
-
 case class ItemList(items: Seq[Item])
 object ItemList {
   implicit val writes = Json.writes[ItemList]
