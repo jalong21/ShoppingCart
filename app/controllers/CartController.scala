@@ -8,7 +8,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Logger}
 import services.CartActor
-import services.CartActor.{CreateCart, GetItems}
+import services.CartActor.{CheckoutCart, CreateCart, GetItems}
 
 import javax.inject.Inject
 import scala.concurrent.Await
@@ -89,7 +89,7 @@ class CartController @Inject()(cc: ControllerComponents,
 
   def checkoutCart(id: String) = Action {
     log.warn(s"checkOutCart - cartID: $id")
-    val checkOutResult = ask(cartActor, checkoutCart(id))
+    val checkOutResult = ask(cartActor, CheckoutCart(id))
       .mapTo[Either[String, CheckedOutCart]]
     Await.result[Either[String, CheckedOutCart]](checkOutResult, 5.seconds) match {
       case Left(errorMessage) => BadRequest(errorMessage)
