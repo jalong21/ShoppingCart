@@ -92,4 +92,6 @@ object ItemProvider {
     Item("Wheelbarrow", 110.00, 12),
     Item("Pruning Saw", 64.95, 13)
   )
+
+  def getItem(id: Int) = items.filter(_.id == id).head
 }

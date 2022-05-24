@@ -38,7 +38,7 @@ class CartActor(conf: Configuration) extends Actor with Timers {
     }
     case AddItemToCart(cartId: String, itemId: Int) => {
       val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
-      val updatedItems: Seq[Item] = cart.items ++ ItemProvider.items.filter(_.id == itemId)
+      val updatedItems: Seq[Item] = cart.items ++ Seq(ItemProvider.getItem(itemId))
       val newCart = Cart(cart.uuid, cart.name, cart.shippingState, updatedItems, cart.coupons)
       Cache.getCache.put(new Element(cart.uuid, newCart))
       sender ! true
