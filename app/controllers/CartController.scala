@@ -17,7 +17,7 @@ class CartController @Inject()(cc: ControllerComponents,
 
   val log = Logger(this.getClass.getName)
 
-  val system = ActorSystem("CartActorSystem")
+  val system = ActorSystem("CartActForSystem")
   val cartActor = system.actorOf(CartActor.props(conf), name = "CartActor")
   implicit val askTimeout = Timeout(5.seconds)
 
@@ -56,36 +56,36 @@ class CartController @Inject()(cc: ControllerComponents,
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def addItemToCart(itemID: Int, cartID: String) = Action {
-    log.warn(s"addItemToCart - item: $itemID, cartID: $cartID")
+  def addItemToCart(itemID: String, id: String) = Action {
+    log.warn(s"addItemToCart - item: $itemID, cartID: $id")
     val cartID = ask(cartActor, CreateCart("id", None))
       .mapTo[String]
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def removeItemFromCart(itemID: Int, cartID: String) = Action {
-    log.warn(s"removeItemFromCart - item: $itemID, cartID: $cartID")
+  def removeItemFromCart(itemID: String, id: String) = Action {
+    log.warn(s"removeItemFromCart - item: $itemID, cartID: $id")
     val cartID = ask(cartActor, CreateCart("id", None))
       .mapTo[String]
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def emptyCart(cartID: String) = Action {
-    log.warn(s"emptyCart - cartID: $cartID")
+  def emptyCart(id: String) = Action {
+    log.warn(s"emptyCart - cartID: $id")
     val cartID = ask(cartActor, CreateCart("id", None))
       .mapTo[String]
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def applyCouponToCart(couponID: String, cartID: String) = Action {
-    log.warn(s"applyCouponToCart - cartID: $cartID, couponID: $couponID")
+  def applyCouponToCart(couponID: String, id: String) = Action {
+    log.warn(s"applyCouponToCart - cartID: $id, couponID: $couponID")
     val cartID = ask(cartActor, CreateCart("id", None))
       .mapTo[String]
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def checkOutCart(paymentId: String, cartID: String) = Action {
-    log.warn(s"checkOutCart - cartID: $cartID, paymentId: $paymentId")
+  def checkoutCart(paymentId: String, id: Option[String]) = Action {
+    log.warn(s"checkOutCart - cartID: $id, paymentId: $paymentId")
     val cartID = ask(cartActor, CreateCart("id", None))
       .mapTo[String]
     Ok(Await.result[String](cartID, 5.seconds))

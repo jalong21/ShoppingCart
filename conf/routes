@@ -3,13 +3,13 @@
 # First created this health endpoint to be used to test that app is, in fact, running
 GET     /v1/health                  controllers.Health.index
 
-GET     /v1/getItems          controllers.CartContoller.getItems()
-POST    /v1/createCart        controllers.CartContoller.createCart(name: String, state: Option[String])
-PUT     /v1/updateCart        controllers.CartContoller.updateCart(id: String, state: Option[String])
-DELETE  /v1/deleteCart        controllers.CartContoller.deleteCart(id: String)
-GET     /v1/getCart/[ID]      controllers.CartContoller.getCart(id: String)
-PUT     /v1/addItem           controllers.CartContoller.addItem(itemID: String, cartID: String)
-PUT     /v1/removeItem        controllers.CartContoller.removeItem(itemID: String, cartID: String)
-PUT     /v1/emptyCart         controllers.CartContoller.emptyCart(itemID: String)
-PUT     /v1/applyCoupon       controllers.CartContoller.applyCoupon(couponID: String, cartID: String)
-GET     /v1/checkOut          controllers.CartContoller.checkOut(id: String, state: Option[String])
+GET     /v1/getItems          controllers.CartController.getItems()
+POST    /v1/createCart        controllers.CartController.createCart(name: String, state: Option[String])
+PUT     /v1/updateCart        controllers.CartController.updateCart(id: String, state: Option[String])
+DELETE  /v1/deleteCart        controllers.CartController.deleteCart(id: String)
+GET     /v1/getCart/[ID]      controllers.CartController.getCart(id: String)
+PUT     /v1/addItem           controllers.CartController.addItemToCart(itemID: String, cartID: String)
+PUT     /v1/removeItem        controllers.CartController.removeItemFromCart(itemID: String, cartID: String)
+PUT     /v1/emptyCart         controllers.CartController.emptyCart(itemID: String)
+PUT     /v1/applyCoupon       controllers.CartController.applyCouponToCart(couponID: String, cartID: String)
+GET     /v1/checkout          controllers.CartController.checkoutCart(id: String, state: Option[String])
