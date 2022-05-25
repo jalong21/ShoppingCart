@@ -21,7 +21,7 @@ object CartActor {
   case class RemoveItemFromCart(cartId: String, itemId: Int)
   case class EmptyCart(cartId: String)
   case class ApplyCouponToCart(couponId: String, cartId: String)
-  case class CheckoutCart(cartId: String)
+  case class CheckoutCart(cartId: String, state: Option[String])
   case class GetItems()
 }
 
@@ -56,9 +56,11 @@ class CartActor(conf: Configuration) extends Actor with Timers {
           sender ! "Coupon Not Found"
         })
     }
-    case CheckoutCart(cartId: String) => {
+    case CheckoutCart(cartId: String, state: Option[String]) => {
       val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
-      cart.shippingState.map(state => {
+      state
+        .orElse(cart.shippingState)
+        .map(state => {
         val couponedItems = cart
           .coupons
           .map(coupon => CouponProvider.getCoupon(coupon))

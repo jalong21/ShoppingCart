@@ -52,9 +52,9 @@ class CartController @Inject()(cc: ControllerComponents,
     Ok(Await.result[String](cartID, 5.seconds))
   }
 
-  def checkoutCart(id: String) = Action {
+  def checkoutCart(id: String, state: Option[String]) = Action {
     log.warn(s"checkOutCart - cartID: $id")
-    val checkOutResult = ask(cartActor, CheckoutCart(id))
+    val checkOutResult = ask(cartActor, CheckoutCart(id, state))
       .mapTo[Either[String, CheckedOutCart]]
     Await.result[Either[String, CheckedOutCart]](checkOutResult, 5.seconds) match {
       case Left(errorMessage) => BadRequest(errorMessage)

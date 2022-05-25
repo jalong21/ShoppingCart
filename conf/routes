@@ -8,7 +8,7 @@ POST    /v1/createCart        controllers.CartController.createCart(name: String
 PUT     /v1/updateCart        controllers.CartController.updateCart(id: String, state: Option[String])
 DELETE  /v1/deleteCart        controllers.CartController.deleteCart(id: String)
 GET     /v1/getCart/[ID]      controllers.CartController.getCart(id: String)
-PUT     /v1/addItem           controllers.CartController.addItemToCart(itemID: String, cartID: String)
+PUT     /v1/addItem           controllers.CartController.addItemToCart(cartId: String, itemId: Int)
 PUT     /v1/removeItem        controllers.CartController.removeItemFromCart(itemID: String, cartID: String)
 PUT     /v1/emptyCart         controllers.CartController.emptyCart(itemID: String)
 PUT     /v1/applyCoupon       controllers.CartController.applyCouponToCart(couponID: String, cartID: String)
