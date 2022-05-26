@@ -33,18 +33,18 @@ class CartActor(conf: Configuration) extends Actor with Timers {
     case CreateCart(name: String, state: Option[String]) => Option(UUID.randomUUID().toString)
       .map(uuid => {
         Cache.addOrReplaceCart(Cart(uuid, name, state, Seq[Item](), Seq[String]()))
-        sender ! uuid
+        sender ! Right(uuid)
       })
-      .getOrElse(sender ! "Error creating UUID")
+      .getOrElse(sender ! Left(new Exception("Error creating UUID")))
 
     case AddItemToCart(cartId: String, itemId: Int) => Cache.getCart(cartId)
       .map(cart => {
         val updatedItems: Seq[Item] = cart.items ++ Seq(ItemProvider.getItem(itemId))
         val newCart = Cart(cart.uuid, cart.name, cart.shippingState, updatedItems, cart.coupons)
         Cache.addOrReplaceCart(newCart)
-        sender ! "Success!"
+        sender ! Right("Success!")
       })
-      .getOrElse(sender ! "Error adding item to Cart")
+      .getOrElse(sender ! Left(new Exception("Error adding item to Cart")))
 
     case ApplyCouponToCart(couponId: String, cartId: String) => Option(CouponProvider.getCoupon(couponId))
         .map(_ => Cache.getCart(cartId)
@@ -54,10 +54,10 @@ class CartActor(conf: Configuration) extends Actor with Timers {
                 cart.shippingState,
                 cart.items,
                 cart.coupons ++ Seq(couponId)))
-              sender ! "Success"
+              sender ! Right("Success")
             })
-        .getOrElse(sender ! "Cart Not Found!"))
-        .getOrElse(sender ! "Coupon Not Found")
+        .getOrElse(sender ! Left(new Exception("Cart Not Found!"))))
+        .getOrElse(sender ! Left(new Exception("Coupon Not Found")))
 
     case CheckoutCart(cartId: String, state: Option[String]) => Cache.getCart(cartId)
       .map(cart => {
@@ -73,9 +73,9 @@ class CartActor(conf: Configuration) extends Actor with Timers {
             val calculatedCart = CheckedOutCart(taxedTotalCost, Cart(cart.uuid, cart.name, cart.shippingState, couponedItems, cart.coupons))
             sender ! Right(calculatedCart)
           })
-          .getOrElse(sender ! Left("State Not Specified. Cannot Calculate Taxes."))
+          .getOrElse(sender ! Left(new Exception("State Not Specified. Cannot Calculate Taxes.")))
       })
-      .getOrElse(sender ! Left("Cart Not Found!"))
+      .getOrElse(sender ! Left(new Exception("Cart Not Found!")))
 
     case GetItems() => {
       sender ! ItemList(ItemProvider.items)
