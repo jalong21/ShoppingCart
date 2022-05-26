@@ -8,13 +8,12 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Logger}
 import services.CartActor
-import services.CartActor.{AddItemToCart, ApplyCouponToCart, CheckoutCart, CreateCart, GetItems}
+import services.CartActor._
 
 import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
 
 class CartController @Inject()(cc: ControllerComponents,
                                conf: Configuration) extends AbstractController(cc) {
@@ -29,7 +28,7 @@ class CartController @Inject()(cc: ControllerComponents,
     log.warn(s"createCart - name: $name state: $state")
     val result = ask(cartActor, CreateCart(name, state))
       .mapTo[Either[Exception, String]]
-      .map(couponResult => couponResult match {
+      .map(cartResult => cartResult match {
         case Left(ex) => BadRequest(ex.getMessage)
         case Right(response) => Ok(response)
       })
@@ -48,7 +47,7 @@ class CartController @Inject()(cc: ControllerComponents,
     log.warn(s"addItemToCart - item: $itemId, cartID: $cartId")
     val result = ask(cartActor, AddItemToCart(cartId, itemId))
       .mapTo[Either[Exception, String]]
-      .map(couponResult => couponResult match {
+      .map(addResult => addResult match {
         case Left(ex) => BadRequest(ex.getMessage)
         case Right(response) => Ok(response)
       })
