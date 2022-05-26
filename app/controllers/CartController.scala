@@ -37,10 +37,10 @@ class CartController @Inject()(cc: ControllerComponents,
 
   def getItems() = Action {
     log.warn(s"getItems")
-    val cartID = ask(cartActor, GetItems())
+    val result = ask(cartActor, GetItems())
       .mapTo[ItemList]
-    val result = Await.result[ItemList](cartID, 5.seconds)
-    Ok(Json.toJson(result))
+      .map(items => Ok(Json.toJson(items)))
+    Await.result[Result](result, 5.seconds)
   }
 
   def addItemToCart(cartId: String, itemId: Int) = Action {
