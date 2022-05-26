@@ -1,6 +1,7 @@
 package Utils
 
-import net.sf.ehcache.CacheManager
+import models.{Cart, Item}
+import net.sf.ehcache.{CacheManager, Element}
 
 object Cache {
 
@@ -8,5 +9,10 @@ object Cache {
   cacheManager.addCacheIfAbsent("Cache")
   private val cache = cacheManager.getCache("Cache")
 
-  def getCache = cache
+  def addOrReplaceCart(cart: Cart) =
+    cache.put(new Element(cart.uuid, cart))
+
+  def getCart(uuid: String) =
+    Option(cache.get(uuid))
+    .map(_.getObjectValue.asInstanceOf[Cart])
 }

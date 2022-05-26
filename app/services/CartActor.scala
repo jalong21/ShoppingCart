@@ -30,54 +30,53 @@ class CartActor(conf: Configuration) extends Actor with Timers {
   val log = Logger(this.getClass.getName)
 
   override def receive: Receive = {
-    case CreateCart(name: String, state: Option[String]) => {
-      val cartUid = UUID.randomUUID().toString
-      Cache.getCache.put(new Element(cartUid, Cart(cartUid, name, state, Seq[Item](), Seq[String]())))
-      sender ! cartUid
-    }
-    case AddItemToCart(cartId: String, itemId: Int) => {
-      val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
-      val updatedItems: Seq[Item] = cart.items ++ Seq(ItemProvider.getItem(itemId))
-      val newCart = Cart(cart.uuid, cart.name, cart.shippingState, updatedItems, cart.coupons)
-      Cache.getCache.put(new Element(cart.uuid, newCart))
-      sender ! "Success!"
-    }
-    case ApplyCouponToCart(couponId: String, cartId: String) => {
-      Option(CouponProvider.getCoupon(couponId))
-        .map(_ => {
-          val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
-          val updatedCoupons: Seq[String] = cart.coupons ++ Seq(couponId)
-          val newCart = Cart(cart.uuid, cart.name, cart.shippingState, cart.items, updatedCoupons)
-          Cache.getCache.put(new Element(cart.uuid, newCart))
-          sender ! "Success"
-        })
-        .getOrElse({
-          //TODO: use an Either like checkout
-          sender ! "Coupon Not Found"
-        })
-    }
-    case CheckoutCart(cartId: String, state: Option[String]) => {
-      val cart = Cache.getCache.get(cartId).getObjectValue.asInstanceOf[Cart]
-      state
-        .orElse(cart.shippingState)
-        .map(state => {
-        val couponedItems = cart
-          .coupons
-          .map(coupon => CouponProvider.getCoupon(coupon))
-          .foldLeft[Seq[Item]](cart.items)((items, coupon) =>
-            coupon.couponFunction(items, coupon.priceMultiplyer, coupon.itemId))
-        val taxedTotalCost = couponedItems
-          .foldLeft[Double](0)((runningTotal, item) => {
-            //TODO: make list of states with individual tax amounts for this calculation
-            runningTotal + item.price * 1.05
-          })
-        val calculatedCart = CheckedOutCart(taxedTotalCost, Cart(cart.uuid, cart.name, cart.shippingState, couponedItems, cart.coupons))
-        sender ! Right(calculatedCart)
+    case CreateCart(name: String, state: Option[String]) => Option(UUID.randomUUID().toString)
+      .map(uuid => {
+        Cache.addOrReplaceCart(Cart(uuid, name, state, Seq[Item](), Seq[String]()))
+        sender ! uuid
       })
-        .getOrElse({
-          sender ! Left("State Not Specified. Cannot Calculate Taxes.")
-        })
-    }
+      .getOrElse(sender ! "Error creating UUID")
+
+    case AddItemToCart(cartId: String, itemId: Int) => Cache.getCart(cartId)
+      .map(cart => {
+        val updatedItems: Seq[Item] = cart.items ++ Seq(ItemProvider.getItem(itemId))
+        val newCart = Cart(cart.uuid, cart.name, cart.shippingState, updatedItems, cart.coupons)
+        Cache.addOrReplaceCart(newCart)
+        sender ! "Success!"
+      })
+      .getOrElse(sender ! "Error adding item to Cart")
+
+    case ApplyCouponToCart(couponId: String, cartId: String) => Option(CouponProvider.getCoupon(couponId))
+        .map(_ => Cache.getCart(cartId)
+            .map(cart => {
+              Cache.addOrReplaceCart(Cart(cart.uuid,
+                cart.name,
+                cart.shippingState,
+                cart.items,
+                cart.coupons ++ Seq(couponId)))
+              sender ! "Success"
+            })
+        .getOrElse(sender ! "Cart Not Found!"))
+        .getOrElse(sender ! "Coupon Not Found")
+
+    case CheckoutCart(cartId: String, state: Option[String]) => Cache.getCart(cartId)
+      .map(cart => {
+        state
+          .orElse(cart.shippingState)
+          .map(state => {
+            val couponedItems = CouponProvider.applyAllCouponsToItems(cart.items, cart.coupons)
+            val taxedTotalCost = couponedItems
+              .foldLeft[Double](0)((runningTotal, item) => {
+                //TODO: make list of states with individual tax amounts for this calculation
+                runningTotal + item.price * 1.05
+              })
+            val calculatedCart = CheckedOutCart(taxedTotalCost, Cart(cart.uuid, cart.name, cart.shippingState, couponedItems, cart.coupons))
+            sender ! Right(calculatedCart)
+          })
+          .getOrElse(sender ! Left("State Not Specified. Cannot Calculate Taxes."))
+      })
+      .getOrElse(sender ! Left("Cart Not Found!"))
+
     case GetItems() => {
       sender ! ItemList(ItemProvider.items)
     }

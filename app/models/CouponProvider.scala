@@ -43,9 +43,15 @@ object CouponProvider {
     }).getOrElse(items)
   }
 
+  def applyAllCouponsToItems(items: Seq[Item], coupons: Seq[String]) = coupons
+    .map(coupon => CouponProvider.getCoupon(coupon))
+    .foldLeft[Seq[Item]](items)((items, coupon) =>
+      coupon.couponFunction(items, coupon.priceMultiplyer, coupon.itemId))
+
   val coupons = Map[String, Coupon](
     ("15PerOff", Coupon(0.9, None, perOffEverything)), // 15% off
     ("10PerOffWaterCan", Coupon(0.9, Some(5), perOffItem)), // 10% off watering cans
+    ("5PerOffWheelBarrow", Coupon(0.95, Some(12), perOffItem)),
     ("50PerOff2OrMoreSpade", Coupon(0.5, Some(2), perOffTwoOrMore)), // 50% off spades if you buy 2 or more
     ("50PerOffGroupOf3Trowel", Coupon(0.5, Some(7), perOffMultipleOfThree)) // 50% off trowel if you buy multiple of 3
   )
