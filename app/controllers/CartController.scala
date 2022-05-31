@@ -25,7 +25,7 @@ class CartController @Inject()(cc: ControllerComponents,
   implicit val askTimeout = Timeout(5.seconds)
 
   def createCart(name: String, state: Option[String]) = Action {
-    log.warn(s"createCart - name: $name state: $state")
+    log.debug(s"createCart - name: $name state: $state")
     val result = ask(cartActor, CreateCart(name, state))
       .mapTo[Either[Exception, String]]
       .map(cartResult => cartResult match {
@@ -36,7 +36,7 @@ class CartController @Inject()(cc: ControllerComponents,
   }
 
   def getItems() = Action {
-    log.warn(s"getItems")
+    log.debug(s"getItems")
     val result = ask(cartActor, GetItems())
       .mapTo[ItemList]
       .map(items => Ok(Json.toJson(items)))
@@ -44,7 +44,7 @@ class CartController @Inject()(cc: ControllerComponents,
   }
 
   def addItemToCart(cartId: String, itemId: Int) = Action {
-    log.warn(s"addItemToCart - item: $itemId, cartID: $cartId")
+    log.debug(s"addItemToCart - item: $itemId, cartID: $cartId")
     val result = ask(cartActor, AddItemToCart(cartId, itemId))
       .mapTo[Either[Exception, String]]
       .map(addResult => addResult match {
@@ -55,7 +55,7 @@ class CartController @Inject()(cc: ControllerComponents,
   }
 
   def applyCouponToCart(couponID: String, id: String) = Action {
-    log.warn(s"applyCouponToCart - cartID: $id, couponID: $couponID")
+    log.debug(s"applyCouponToCart - cartID: $id, couponID: $couponID")
     val result = ask(cartActor, ApplyCouponToCart(couponID, id))
       .mapTo[Either[Exception, String]]
       .map(couponResult => couponResult match {
@@ -66,7 +66,7 @@ class CartController @Inject()(cc: ControllerComponents,
   }
 
   def checkoutCart(id: String, state: Option[String]) = Action {
-    log.warn(s"checkOutCart - cartID: $id")
+    log.debug(s"checkOutCart - cartID: $id")
     val result = ask(cartActor, CheckoutCart(id, state))
       .mapTo[Either[Exception, CheckedOutCart]]
       .map(checkoutResult => checkoutResult match {
@@ -78,35 +78,35 @@ class CartController @Inject()(cc: ControllerComponents,
 
   // Below this line none of the endpoints are actually plugged in
 //  def updateCart(id: String, state: Option[String]) = Action {
-//    log.warn(s"updateCart - id: $id state: $state")
+//    log.debug(s"updateCart - id: $id state: $state")
 //    val cartID = ask(cartActor, CreateCart(id, state))
 //      .mapTo[String]
 //    Ok(Await.result[String](cartID, 5.seconds))
 //  }
 //
 //  def deleteCart(id: String) = Action {
-//    log.warn(s"deleteCart - id: $id")
+//    log.debug(s"deleteCart - id: $id")
 //    val cartID = ask(cartActor, CreateCart(id, None))
 //      .mapTo[String]
 //    Ok(Await.result[String](cartID, 5.seconds))
 //  }
 //
 //  def getCart(id: String) = Action {
-//    log.warn(s"getCart - id: $id")
+//    log.debug(s"getCart - id: $id")
 //    val cartID = ask(cartActor, CreateCart(id, None))
 //      .mapTo[String]
 //    Ok(Await.result[String](cartID, 5.seconds))
 //  }
 //
 //  def removeItemFromCart(itemID: String, id: String) = Action {
-//    log.warn(s"removeItemFromCart - item: $itemID, cartID: $id")
+//    log.debug(s"removeItemFromCart - item: $itemID, cartID: $id")
 //    val cartID = ask(cartActor, CreateCart("id", None))
 //      .mapTo[String]
 //    Ok(Await.result[String](cartID, 5.seconds))
 //  }
 //
 //  def emptyCart(id: String) = Action {
-//    log.warn(s"emptyCart - cartID: $id")
+//    log.debug(s"emptyCart - cartID: $id")
 //    val cartID = ask(cartActor, CreateCart("id", None))
 //      .mapTo[String]
 //    Ok(Await.result[String](cartID, 5.seconds))
